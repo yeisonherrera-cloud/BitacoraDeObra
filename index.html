@@ -222,7 +222,6 @@
       <textarea id="appDescripcion" rows="3" placeholder="Detalles de la labor, novedades, observaciones..."></textarea>
     </div>
 
-    <!-- SECCIÓN MULTIMEDIA ACTUALIZADA -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
         <input type="file" id="inputFoto" accept="image/*" capture="environment">
         <button class="btn-action btn-foto" onclick="document.getElementById('inputFoto').click()" style="margin-top: 0;">📸 TOMAR FOTO</button>
@@ -231,7 +230,6 @@
         <button class="btn-action btn-video" onclick="document.getElementById('inputVideo').click()" style="margin-top: 0;">🎥 GRABAR VIDEO</button>
     </div>
     
-    <!-- BOTÓN: ADJUNTAR DESDE LA GALERÍA -->
     <input type="file" id="inputGaleria" accept="image/*,video/*" multiple>
     <button class="btn-action btn-galeria" onclick="document.getElementById('inputGaleria').click()" style="margin-top: 0; margin-bottom: 10px;">📁 ADJUNTAR DE GALERÍA</button>
 
@@ -252,7 +250,6 @@
   <div class="footer">Desarrollado por ⚡ Obras Manizales ⚡</div>
 
   <script>
-    // NUEVA URL APPS SCRIPT
     const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbxpQxEr3ZXbuv4zmYbhoy7EFchSp2UG0MQHA4Rv-p8rEQWsYt6nQa6VhUc3o5zPOaGw/exec'; 
     
     let dbUsuarios = [];
@@ -264,7 +261,6 @@
     let ultimaVista = 'vistaLogin';
     let cedulaParaReasignar = "";
 
-    /* === LÓGICA DE INDEXEDDB PARA ARCHIVOS PESADOS === */
     let dbArchivos;
     function initDB() {
         return new Promise((resolve) => {
@@ -293,7 +289,6 @@
         const tx = dbArchivos.transaction('archivos', 'readwrite');
         tx.objectStore('archivos').delete('queue');
     }
-    /* ================================================ */
 
     window.addEventListener('DOMContentLoaded', async () => {
         mostrarLoader("Iniciando Sistema");
@@ -325,7 +320,6 @@
                 clearInterval(simuladorEnMarcha);
                 document.getElementById("vistaLoader").classList.remove("is-processing");
                 
-                // CACHÉ (AUTO-LOGIN Y DRAFT)
                 const cachedUser = localStorage.getItem('usuarioActual');
                 if(cachedUser) {
                     usuarioActual = JSON.parse(cachedUser);
@@ -340,7 +334,6 @@
             errorLoader("Fallo de conexión al servidor.");
         }
 
-        // AUTO-GUARDADO DE CACHÉ AL ESCRIBIR
         document.querySelectorAll('#vistaApp input, #vistaApp select, #vistaApp textarea').forEach(el => {
             if(el.type !== 'file') {
                 el.addEventListener('change', guardarDraft);
@@ -673,7 +666,6 @@
     function obtenerFechaFormateada() {
         const d = new Date();
         const p = (n) => n.toString().padStart(2, '0');
-        // SE ELIMINÓ LA HORA PARA QUE EL NOMBRE DEL ARCHIVO QUEDE LIMPIO
         return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()}`;
     }
 
@@ -705,18 +697,42 @@
         let errores = 0;
         let ultimoErrorTxt = ""; 
         let contadoresTipo = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
+        
+        // 1. Pre-conteo para el resumen
+        archivosQueue.forEach(item => {
+            if(contadoresTipo[item.tipo] !== undefined) contadoresTipo[item.tipo]++;
+        });
+        let resumenText = `Se cargaron: ${contadoresTipo['Foto']} Fotos, ${contadoresTipo['Video']} Videos, ${contadoresTipo['Audio']} Audios.`;
 
+        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO
+        try {
+            await fetch(URL_APPS_SCRIPT, { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    action: 'telegram_header', 
+                    proyecto: proyectoElegido,
+                    usuario: usuarioActual.nombre,
+                    frente: frente,
+                    ubicacion: ubicacion,
+                    modulo: modulo,
+                    descripcion: descripcion,
+                    resumen: resumenText
+                }) 
+            });
+        } catch(e) {}
+
+        // 3. SUBIR ARCHIVOS
+        let contadoresSubida = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
         if (archivosQueue.length > 0) {
             for(let i=0; i<archivosQueue.length; i++) {
                 let item = archivosQueue[i];
                 let msg = `Subiendo y enviando archivo ${i+1} de ${archivosQueue.length}...`;
                 actualizarUI({ progreso: Math.floor(((i)/archivosQueue.length)*80), mensaje: msg });
 
-                contadoresTipo[item.tipo]++;
-                let nombreFinal = `${sigla}-${frente}-${ubicacion}-${fecha}_${modulo}_${item.tipo.toUpperCase()}${contadoresTipo[item.tipo]}.${item.extension}`;
+                contadoresSubida[item.tipo]++;
+                let nombreFinal = `${sigla}-${frente}-${ubicacion}-${fecha}_${modulo}_${item.tipo.toUpperCase()}${contadoresSubida[item.tipo]}.${item.extension}`;
 
                 try {
-                    // SE AGREGA "proyecto: proyectoElegido" EN EL FETCH PARA QUE EL BACKEND SEPA A QUÉ GRUPO DE TELEGRAM ENVIAR
                     const r = await fetch(URL_APPS_SCRIPT, { method: 'POST', body: JSON.stringify({ action: 'upload', base64: item.base64, nombre: nombreFinal, proyecto: proyectoElegido }) });
                     const res = await r.json();
                     
@@ -734,8 +750,7 @@
         if(errores === 0) {
             actualizarUI({ progreso: 90, mensaje: "Registrando trazabilidad..." });
             
-            let resumenText = `Se cargaron: ${contadoresTipo['Foto']} Fotos, ${contadoresTipo['Video']} Videos, ${contadoresTipo['Audio']} Audios.`;
-            
+            // 4. GUARDAR EN GOOGLE SHEETS
             try {
                 const payloadTrazabilidad = {
                     action: 'trazabilidad',
@@ -765,7 +780,6 @@
                 wsText += `*Descripcion:*\n_${descripcion}_\n\n`;
             }
 
-            // BOTÓN DE WHATSAPP REDISEÑADO (AHORA DICE QUE YA SE ENVIÓ A TELEGRAM)
             let btnWhatsAppHTML = `<br><br><span style="color:#a0aec0; font-size:12px;">✅ Fotos y textos enviados a Telegram.</span><br><a href="https://wa.me/?text=${encodeURIComponent(wsText)}" target="_blank" style="text-decoration:none;"><button class="btn-action btn-whatsapp" style="margin-top:10px;">💬 AVISAR POR WHATSAPP (OPCIONAL)</button></a>`;
 
             archivosQueue = [];
