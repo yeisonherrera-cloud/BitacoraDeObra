@@ -289,6 +289,7 @@
         tx.objectStore('archivos').delete('queue');
     }
 
+    // ACTUALIZACIÓN DE ENLACES BOTÓN TELEGRAM
     function getTelegramGroupUrl(proyectoNombre, modulo, frente) {
         var nombre = String(proyectoNombre).toUpperCase();
         var mod = String(modulo).toUpperCase();
@@ -296,18 +297,18 @@
         var esVigilancia = fren.includes("VIGILANCIA");
 
         if (nombre.includes("MALC") || nombre.includes("ALCAZARES") || nombre.includes("ALCÁZARES")) {
-            if (esVigilancia) return "https://web.telegram.org/k/#-5438947766";
-            if (mod === "SST") return "https://web.telegram.org/k/#-5298354379";
+            if (esVigilancia) return "https://web.telegram.org/k/#-4312716019";
+            if (mod === "SST") return "https://web.telegram.org/k/#-4365952367";
             return "https://web.telegram.org/k/#-4359038522";
         }
         if (nombre.includes("CF") || nombre.includes("CIUDAD FLORAL")) {
-            if (esVigilancia) return "https://web.telegram.org/k/#-5570292702";
-            if (mod === "SST") return "https://web.telegram.org/k/#-5485392027";
+            if (esVigilancia) return "https://web.telegram.org/k/#-4467458746";
+            if (mod === "SST") return "https://web.telegram.org/k/#-4433927187";
             return "https://web.telegram.org/k/#-4343222591";
         }
         if (nombre.includes("FDS") || nombre.includes("FORESTA")) {
-            if (esVigilancia) return "https://web.telegram.org/k/#-5456053019";
-            if (mod === "SST") return "https://web.telegram.org/k/#-5555048569";
+            if (esVigilancia) return "https://web.telegram.org/k/#-4394411045";
+            if (mod === "SST") return "https://web.telegram.org/k/#-4387709086";
             return "https://web.telegram.org/k/#-4405851185";
         }
         return "https://web.telegram.org/k/";
@@ -726,9 +727,9 @@
         });
         let resumenText = `Se cargaron: ${contadoresTipo['Foto']} Fotos, ${contadoresTipo['Video']} Videos, ${contadoresTipo['Audio']} Audios.`;
 
-        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO
+        // ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO
         try {
-            await fetch(URL_APPS_SCRIPT, { 
+            const rTg = await fetch(URL_APPS_SCRIPT, { 
                 method: 'POST', 
                 body: JSON.stringify({ 
                     action: 'telegram_header', 
@@ -741,9 +742,16 @@
                     resumen: resumenText
                 }) 
             });
+            const resTg = await rTg.json();
+            if (resTg.estado === "error") {
+                errores++;
+                ultimoErrorTxt = resTg.mensaje;
+                errorLoader(`Fallo en la subida.<br><span style="font-size:11px;color:#ffb3b3;margin-top:10px;display:block;">Detalle: ${ultimoErrorTxt}</span>`);
+                return;
+            }
         } catch(e) {}
 
-        // 3. SUBIR ARCHIVOS Y ENVIAR A TELEGRAM
+        // SUBIR ARCHIVOS Y ENVIAR A TELEGRAM
         let contadoresSubida = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
         if (archivosQueue.length > 0) {
             for(let i=0; i<archivosQueue.length; i++) {
