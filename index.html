@@ -221,6 +221,7 @@
       <textarea id="appDescripcion" rows="3" placeholder="Detalles de la labor, novedades, observaciones..."></textarea>
     </div>
 
+    <!-- SECCIÓN MULTIMEDIA ACTUALIZADA -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
         <input type="file" id="inputFoto" accept="image/*" capture="environment">
         <button class="btn-action btn-foto" onclick="document.getElementById('inputFoto').click()" style="margin-top: 0;">📸 TOMAR FOTO</button>
@@ -229,6 +230,7 @@
         <button class="btn-action btn-video" onclick="document.getElementById('inputVideo').click()" style="margin-top: 0;">🎥 GRABAR VIDEO</button>
     </div>
     
+    <!-- BOTÓN: ADJUNTAR DESDE LA GALERÍA -->
     <input type="file" id="inputGaleria" accept="image/*,video/*" multiple>
     <button class="btn-action btn-galeria" onclick="document.getElementById('inputGaleria').click()" style="margin-top: 0; margin-bottom: 10px;">📁 ADJUNTAR DE GALERÍA</button>
 
@@ -289,7 +291,6 @@
         tx.objectStore('archivos').delete('queue');
     }
 
-    // --- FUNCIÓN PARA GENERAR URL DEL GRUPO DE TELEGRAM ---
     function getTelegramGroupUrl(proyectoNombre, modulo, frente) {
         var nombre = String(proyectoNombre).toUpperCase();
         var mod = String(modulo).toUpperCase();
@@ -313,7 +314,6 @@
         }
         return "https://web.telegram.org/k/";
     }
-    // ------------------------------------------------------
 
     window.addEventListener('DOMContentLoaded', async () => {
         mostrarLoader("Iniciando Sistema");
@@ -729,7 +729,7 @@
         });
         let resumenText = `Se cargaron: ${contadoresTipo['Foto']} Fotos, ${contadoresTipo['Video']} Videos, ${contadoresTipo['Audio']} Audios.`;
 
-        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO (NUEVO ORDEN)
+        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO (CORREGIDO CON MÓDULO Y FRENTE)
         try {
             await fetch(URL_APPS_SCRIPT, { 
                 method: 'POST', 
@@ -746,7 +746,7 @@
             });
         } catch(e) {}
 
-        // 3. SUBIR ARCHIVOS (Y ENVIAR A TELEGRAM SIN DESCRIPCIÓN)
+        // 3. SUBIR ARCHIVOS Y ENVIAR A TELEGRAM (CORREGIDO CON MÓDULO Y FRENTE)
         let contadoresSubida = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
         if (archivosQueue.length > 0) {
             for(let i=0; i<archivosQueue.length; i++) {
@@ -796,7 +796,6 @@
                 }
             } catch (e) { console.log("Fallo trazabilidad, pero se avanza"); }
 
-            // BOTÓN DE TELEGRAM (REEMPLAZA AL DE WHATSAPP)
             let tgUrl = getTelegramGroupUrl(proyectoElegido, modulo, frente);
             let btnTelegramHTML = `<br><br><span style="color:#a0aec0; font-size:12px;">✅ Fotos y textos enviados a Telegram.</span><br><a href="${tgUrl}" target="_blank" style="text-decoration:none;"><button class="btn-action btn-telegram" style="margin-top:10px;">✈️ ABRIR GRUPO DE TELEGRAM</button></a>`;
 
