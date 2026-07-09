@@ -221,7 +221,6 @@
       <textarea id="appDescripcion" rows="3" placeholder="Detalles de la labor, novedades, observaciones..."></textarea>
     </div>
 
-    <!-- SECCIÓN MULTIMEDIA ACTUALIZADA -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
         <input type="file" id="inputFoto" accept="image/*" capture="environment">
         <button class="btn-action btn-foto" onclick="document.getElementById('inputFoto').click()" style="margin-top: 0;">📸 TOMAR FOTO</button>
@@ -230,7 +229,6 @@
         <button class="btn-action btn-video" onclick="document.getElementById('inputVideo').click()" style="margin-top: 0;">🎥 GRABAR VIDEO</button>
     </div>
     
-    <!-- BOTÓN: ADJUNTAR DESDE LA GALERÍA -->
     <input type="file" id="inputGaleria" accept="image/*,video/*" multiple>
     <button class="btn-action btn-galeria" onclick="document.getElementById('inputGaleria').click()" style="margin-top: 0; margin-bottom: 10px;">📁 ADJUNTAR DE GALERÍA</button>
 
@@ -723,13 +721,12 @@
         let ultimoErrorTxt = ""; 
         let contadoresTipo = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
         
-        // 1. Pre-conteo para el resumen
         archivosQueue.forEach(item => {
             if(contadoresTipo[item.tipo] !== undefined) contadoresTipo[item.tipo]++;
         });
         let resumenText = `Se cargaron: ${contadoresTipo['Foto']} Fotos, ${contadoresTipo['Video']} Videos, ${contadoresTipo['Audio']} Audios.`;
 
-        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO (CORREGIDO CON MÓDULO Y FRENTE)
+        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO
         try {
             await fetch(URL_APPS_SCRIPT, { 
                 method: 'POST', 
@@ -746,7 +743,7 @@
             });
         } catch(e) {}
 
-        // 3. SUBIR ARCHIVOS Y ENVIAR A TELEGRAM (CORREGIDO CON MÓDULO Y FRENTE)
+        // 3. SUBIR ARCHIVOS Y ENVIAR A TELEGRAM
         let contadoresSubida = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
         if (archivosQueue.length > 0) {
             for(let i=0; i<archivosQueue.length; i++) {
@@ -775,7 +772,6 @@
         if(errores === 0) {
             actualizarUI({ progreso: 90, mensaje: "Registrando trazabilidad..." });
             
-            // 4. GUARDAR EN GOOGLE SHEETS
             try {
                 const payloadTrazabilidad = {
                     action: 'trazabilidad',
