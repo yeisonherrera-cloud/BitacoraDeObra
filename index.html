@@ -60,8 +60,7 @@
     .btn-galeria:hover { background: #0ea5e9; color: white; }
     .btn-error { background: linear-gradient(135deg, #ff416c, #ff4b2b); box-shadow: 0 4px 15px rgba(255, 75, 43, 0.3); }
     .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
-    .btn-info { background: linear-gradient(135deg, #0575e6, #021b79); box-shadow: 0 4px 15px rgba(5, 117, 230, 0.3); }
-    .btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
+    .btn-telegram { background: linear-gradient(135deg, #0088cc, #005580); box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3); }
     
     .btn-audio-grabando { background: linear-gradient(135deg, #ff416c, #ff4b2b); animation: pulseRecord 1.5s infinite; }
     @keyframes pulseRecord { 0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 65, 108, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); } }
@@ -289,6 +288,32 @@
         const tx = dbArchivos.transaction('archivos', 'readwrite');
         tx.objectStore('archivos').delete('queue');
     }
+
+    // --- FUNCIÓN PARA GENERAR URL DEL GRUPO DE TELEGRAM ---
+    function getTelegramGroupUrl(proyectoNombre, modulo, frente) {
+        var nombre = String(proyectoNombre).toUpperCase();
+        var mod = String(modulo).toUpperCase();
+        var fren = String(frente).toUpperCase();
+        var esVigilancia = fren.includes("VIGILANCIA");
+
+        if (nombre.includes("MALC") || nombre.includes("ALCAZARES") || nombre.includes("ALCÁZARES")) {
+            if (esVigilancia) return "https://web.telegram.org/k/#-5438947766";
+            if (mod === "SST") return "https://web.telegram.org/k/#-5298354379";
+            return "https://web.telegram.org/k/#-4359038522";
+        }
+        if (nombre.includes("CF") || nombre.includes("CIUDAD FLORAL")) {
+            if (esVigilancia) return "https://web.telegram.org/k/#-5570292702";
+            if (mod === "SST") return "https://web.telegram.org/k/#-5485392027";
+            return "https://web.telegram.org/k/#-4343222591";
+        }
+        if (nombre.includes("FDS") || nombre.includes("FORESTA")) {
+            if (esVigilancia) return "https://web.telegram.org/k/#-5456053019";
+            if (mod === "SST") return "https://web.telegram.org/k/#-5555048569";
+            return "https://web.telegram.org/k/#-4405851185";
+        }
+        return "https://web.telegram.org/k/";
+    }
+    // ------------------------------------------------------
 
     window.addEventListener('DOMContentLoaded', async () => {
         mostrarLoader("Iniciando Sistema");
@@ -704,7 +729,7 @@
         });
         let resumenText = `Se cargaron: ${contadoresTipo['Foto']} Fotos, ${contadoresTipo['Video']} Videos, ${contadoresTipo['Audio']} Audios.`;
 
-        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO
+        // 2. ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO (NUEVO ORDEN)
         try {
             await fetch(URL_APPS_SCRIPT, { 
                 method: 'POST', 
@@ -721,7 +746,7 @@
             });
         } catch(e) {}
 
-        // 3. SUBIR ARCHIVOS
+        // 3. SUBIR ARCHIVOS (Y ENVIAR A TELEGRAM SIN DESCRIPCIÓN)
         let contadoresSubida = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
         if (archivosQueue.length > 0) {
             for(let i=0; i<archivosQueue.length; i++) {
@@ -733,7 +758,7 @@
                 let nombreFinal = `${sigla}-${frente}-${ubicacion}-${fecha}_${modulo}_${item.tipo.toUpperCase()}${contadoresSubida[item.tipo]}.${item.extension}`;
 
                 try {
-                    const r = await fetch(URL_APPS_SCRIPT, { method: 'POST', body: JSON.stringify({ action: 'upload', base64: item.base64, nombre: nombreFinal, proyecto: proyectoElegido }) });
+                    const r = await fetch(URL_APPS_SCRIPT, { method: 'POST', body: JSON.stringify({ action: 'upload', base64: item.base64, nombre: nombreFinal, proyecto: proyectoElegido, modulo: modulo, frente: frente }) });
                     const res = await r.json();
                     
                     if(res.estado !== 'exito') {
@@ -771,16 +796,9 @@
                 }
             } catch (e) { console.log("Fallo trazabilidad, pero se avanza"); }
 
-            let wsText = `*--- REPORTE DE OBRA - ${modulo} ---*\n`;
-            wsText += `*Registra:* ${usuarioActual.nombre}\n`;
-            wsText += `*Proyecto:* ${proyectoElegido}\n`;
-            wsText += `*Ubicacion:* ${frente} - ${ubicacion}\n\n`;
-
-            if (descripcion !== "") {
-                wsText += `*Descripcion:*\n_${descripcion}_\n\n`;
-            }
-
-            let btnWhatsAppHTML = `<br><br><span style="color:#a0aec0; font-size:12px;">✅ Fotos y textos enviados a Telegram.</span><br><a href="https://wa.me/?text=${encodeURIComponent(wsText)}" target="_blank" style="text-decoration:none;"><button class="btn-action btn-whatsapp" style="margin-top:10px;">💬 AVISAR POR WHATSAPP (OPCIONAL)</button></a>`;
+            // BOTÓN DE TELEGRAM (REEMPLAZA AL DE WHATSAPP)
+            let tgUrl = getTelegramGroupUrl(proyectoElegido, modulo, frente);
+            let btnTelegramHTML = `<br><br><span style="color:#a0aec0; font-size:12px;">✅ Fotos y textos enviados a Telegram.</span><br><a href="${tgUrl}" target="_blank" style="text-decoration:none;"><button class="btn-action btn-telegram" style="margin-top:10px;">✈️ ABRIR GRUPO DE TELEGRAM</button></a>`;
 
             archivosQueue = [];
             localStorage.removeItem('reporteDraft');
@@ -791,7 +809,7 @@
             
             actualizarUICola();
             
-            exitoLoader(`Reporte completado exitosamente.${btnWhatsAppHTML}`, 'vistaApp');
+            exitoLoader(`Reporte completado exitosamente.${btnTelegramHTML}`, 'vistaApp');
         } else {
             errorLoader(`Fallo en la subida de ${errores} archivo(s).<br><span style="font-size:11px;color:#ffb3b3;margin-top:10px;display:block;">Detalle: ${ultimoErrorTxt}</span>`);
         }
