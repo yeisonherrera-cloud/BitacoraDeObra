@@ -289,12 +289,16 @@
         tx.objectStore('archivos').delete('queue');
     }
 
-    // ACTUALIZACIÓN DE ENLACES BOTÓN TELEGRAM
     function getTelegramGroupUrl(proyectoNombre, modulo, frente) {
         var nombre = String(proyectoNombre).toUpperCase();
         var mod = String(modulo).toUpperCase();
         var fren = String(frente).toUpperCase();
         var esVigilancia = fren.includes("VIGILANCIA");
+
+        // SI ES PERSONAL DISPERSO, ABRE EL TELEGRAM GENERAL PARA EVITAR CONFLICTOS
+        if (nombre.includes("PERSONAL DISPERSO") || nombre.includes("TODAS LAS OBRAS")) {
+            return "https://web.telegram.org/k/";
+        }
 
         if (nombre.includes("MALC") || nombre.includes("ALCAZARES") || nombre.includes("ALCÁZARES")) {
             if (esVigilancia) return "https://web.telegram.org/k/#-4312716019";
@@ -727,7 +731,6 @@
         });
         let resumenText = `Se cargaron: ${contadoresTipo['Foto']} Fotos, ${contadoresTipo['Video']} Videos, ${contadoresTipo['Audio']} Audios.`;
 
-        // ENVIAR EL ENCABEZADO A TELEGRAM PRIMERO
         try {
             const rTg = await fetch(URL_APPS_SCRIPT, { 
                 method: 'POST', 
@@ -751,7 +754,6 @@
             }
         } catch(e) {}
 
-        // SUBIR ARCHIVOS Y ENVIAR A TELEGRAM
         let contadoresSubida = { 'Foto': 0, 'Video': 0, 'Audio': 0 };
         if (archivosQueue.length > 0) {
             for(let i=0; i<archivosQueue.length; i++) {
