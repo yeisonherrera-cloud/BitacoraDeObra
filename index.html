@@ -318,6 +318,32 @@
         return "https://web.telegram.org/k/";
     }
 
+    // --- NUEVA FUNCIÓN PARA ABRIR TELEGRAM SEGÚN EL DISPOSITIVO ---
+    function abrirTelegram(url) {
+        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        var isAndroid = /android/i.test(userAgent);
+        var isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+        if (isAndroid) {
+            // Android: Usamos el esquema Intent de Chrome. Si tiene Telegram lo abre, sino va a la PlayStore.
+            var intentUrl = url.replace("https://", "intent://") + "#Intent;package=org.telegram.messenger;scheme=https;end;";
+            window.location.href = intentUrl;
+        } else if (isIOS) {
+            // iOS: Intentamos abrir el esquema genérico nativo de telegram
+            var start = Date.now();
+            setTimeout(function() {
+                // Si en 1 segundo no ha cambiado de app, redirige a la App Store
+                if (Date.now() - start < 1500) {
+                    window.location.href = "https://apps.apple.com/app/telegram-messenger/id686449807";
+                }
+            }, 1000);
+            window.location.href = "tg://";
+        } else {
+            // PC u otros
+            window.open(url, '_blank');
+        }
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
         mostrarLoader("Iniciando Sistema");
         await initDB(); 
@@ -803,7 +829,8 @@
             } catch (e) { console.log("Fallo trazabilidad, pero se avanza"); }
 
             let tgUrl = getTelegramGroupUrl(proyectoElegido, modulo, frente);
-            let btnTelegramHTML = `<br><br><span style="color:#a0aec0; font-size:12px;">✅ Fotos y textos enviados a Telegram.</span><br><a href="${tgUrl}" target="_blank" style="text-decoration:none;"><button class="btn-action btn-telegram" style="margin-top:10px;">✈️ ABRIR GRUPO DE TELEGRAM</button></a>`;
+            // REEMPLAZAMOS EL <A HREF=...> POR EL LLAMADO A LA FUNCIÓN ABRIR TELEGRAM 
+            let btnTelegramHTML = `<br><br><span style="color:#a0aec0; font-size:12px;">✅ Fotos y textos enviados a Telegram.</span><br><button class="btn-action btn-telegram" style="margin-top:10px;" onclick="abrirTelegram('${tgUrl}')">✈️ ABRIR GRUPO DE TELEGRAM</button>`;
 
             archivosQueue = [];
             localStorage.removeItem('reporteDraft');
