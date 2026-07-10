@@ -745,7 +745,9 @@
         const infoProy = dbProyectos[proyectoElegido];
         const sigla = infoProy ? infoProy.sigla : "S-S";
         const fecha = obtenerFechaFormateada();
-        const modulo = usuarioActual.modulo || "OBRA";
+        
+        // CORRECCIÓN: Forzamos la limpieza del texto del módulo para que el backend lo reciba intacto
+        const modulo = (usuarioActual.modulo || "OBRA").trim().toUpperCase();
 
         mostrarLoader("Procesando Reporte...");
         let errores = 0;
